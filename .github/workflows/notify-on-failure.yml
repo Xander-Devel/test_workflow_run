@@ -1,0 +1,19 @@
+name: Notify on failure
+
+on:
+  workflow_run:
+    workflows: ["Cypress test runners", "Cypress test runners FAIL"]
+    types: completed
+    branches: renovate-updates
+
+jobs:
+  on-failure:
+    runs-on: ubuntu-22.04
+    if: ${{ github.event.workflow_run.conclusion == 'failure' }}
+    steps:
+    - name: Print failure notification
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+      run: |
+
+        echo "🔴 The GitHub workflow '${{ github.event.workflow_run.name }}' failed on the renovate-updates branch against master -> ${{ github.event.workflow_run.html_url }}" > message.txt

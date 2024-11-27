@@ -1,6 +1,17 @@
-name: GitHub Actions Demo
-run-name: ${{ github.actor }} is testing out GitHub Actions 🚀
-on: [push]
+name: Cypress test WAIT
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+    inputs:
+      reference:
+        description: 'Reference (a commit hash, a branch, or tag):'
+        required: true
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
 jobs:
   Explore-GitHub-Actions:
     runs-on: ubuntu-latest

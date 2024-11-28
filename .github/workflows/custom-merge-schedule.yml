@@ -1,0 +1,29 @@
+name: CUSTOM Merge Schedule
+
+on:
+  pull_request:
+    branches:
+      - '*'
+      - '!renovate-updates-wait'
+
+jobs:
+  custom_merge_schedule:
+    runs-on: ubuntu-22.04
+    permissions: write-all
+    steps:
+      - name: CUSTOM Merge Schedule START
+        run: |
+          sleep 120
+          
+          merge_status=$(gh api \
+            --method PUT \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            /repos/${{ github.event.workflow_run.repository.full_name }}/pulls/${{ PR_NUMBER }}/merge \
+            -f "commit_title=Expand enum" -f "commit_message=Add a new value to the merge_method enum")
+          
+          echo "$merge_status"
+
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.number }}

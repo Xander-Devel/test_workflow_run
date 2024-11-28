@@ -2,13 +2,14 @@ name: CUSTOM Merge Schedule
 
 on:
   pull_request:
-    branches-ignore:
-      - 'renovate-updates-wait'
+    branches:
+      - '*'
 
 jobs:
   custom_merge_schedule:
     runs-on: ubuntu-22.04
     permissions: write-all
+    if: github.ref != 'refs/heads/renovate-updates-wait'
     steps:
       - name: CUSTOM Merge Schedule START
         run: |

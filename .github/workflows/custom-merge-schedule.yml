@@ -9,21 +9,22 @@ jobs:
   custom_merge_schedule:
     runs-on: ubuntu-22.04
     permissions: write-all
-    if: github.ref != 'refs/heads/renovate-updates-wait'
+    if: github.head_ref != 'renovate-updates-wait'
     steps:
       - name: CUSTOM Merge Schedule START
         run: |
-          sleep 120
+          echo ${{ github.head_ref }}
+          echo ${{ github.event.pull_request.number }}
+          sleep 60
           
           merge_status=$(gh api \
             --method PUT \
             -H "Accept: application/vnd.github+json" \
             -H "X-GitHub-Api-Version: 2022-11-28" \
-            /repos/${{ github.event.workflow_run.repository.full_name }}/pulls/"$ACQUIA_API_KEY"/merge \
+            /repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/merge \
             -f "commit_title=Expand enum" -f "commit_message=Add a new value to the merge_method enum")
           
           echo "$merge_status"
 
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PR_NUMBER: ${{ github.event.number }}

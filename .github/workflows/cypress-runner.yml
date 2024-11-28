@@ -1,4 +1,4 @@
-name: Cypress test runners
+name: Cypress test runners example
 
 on:
   pull_request:
@@ -14,7 +14,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  Composer-Lock-Diff:
+  Cypress-test-runners-example:
     runs-on: ubuntu-latest
     steps:
       - run: echo "🎉 The job was automatically triggered by a ${{ github.event_name }} event."

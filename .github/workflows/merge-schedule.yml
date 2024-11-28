@@ -12,9 +12,7 @@ on:
 jobs:
   merge_schedule:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      pull_request: write
+    permissions: write-all
     steps:
       - uses: gr2m/merge-schedule-action@v2
         with:

@@ -15,9 +15,9 @@ concurrency:
 
 jobs:
   Composer-Lock-Diff:
-    runs-on: self-hosted
-    name: wait-job
+    runs-on: ubuntu-latest
     steps:
+      - run: echo "🎉 The job was automatically triggered by a ${{ github.event_name }} event."
+      - run: echo "🐧 This job is now running on a ${{ runner.os }} server hosted by GitHub!"
       - name: Sleep for 5 minutes
-        run: sleep 300s
-        shell: bash
+        run: sleep 300

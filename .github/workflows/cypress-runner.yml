@@ -2,12 +2,22 @@ name: Cypress test runners
 
 on:
   pull_request:
-    branches:
-      - '*'
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+    inputs:
+      reference:
+        description: 'Reference (a commit hash, a branch, or tag):'
+        required: true
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
 
 jobs:
-  cypress-test:
-    runs-on: ubuntu-latest
+  Composer-Lock-Diff:
+    runs-on: self-hosted
+    name: wait-job
     steps:
-      - run: echo "🎉 The job was automatically triggered by a ${{ github.event_name }} event."
-      - run: echo "🐧 This job is now running on a ${{ runner.os }} server hosted by GitHub!"
+      - name: Sleep for 5 minutes
+        run: sleep 300s
+        shell: bash

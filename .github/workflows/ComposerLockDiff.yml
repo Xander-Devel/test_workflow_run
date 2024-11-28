@@ -15,5 +15,5 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - run: echo "🎉 The job was automatically triggered by a ${{ github.event_name }} event."
-      - name: Sleep for 5 minutes
-        run: sleep 180
+      - name: Sleep for 3 minutes
+        run: sleep 3

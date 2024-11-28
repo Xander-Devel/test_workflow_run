@@ -1,0 +1,20 @@
+name: "Composer Lock Diff"
+
+on:
+  pull_request:
+    branches:
+      # List target branches, not source branches.
+      - '*'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  Composer-Lock-Diff:
+    runs-on: self-hosted
+    name: wait-job
+    steps:
+      - name: Sleep for 3 minutes
+        run: sleep 180s
+        shell: bash

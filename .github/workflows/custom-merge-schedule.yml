@@ -2,9 +2,8 @@ name: CUSTOM Merge Schedule
 
 on:
   pull_request:
-    branches:
-      - '*'
-      - '!renovate-updates-wait'
+    branches-ignore:
+      - 'renovate-updates-wait'
 
 jobs:
   custom_merge_schedule:

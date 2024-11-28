@@ -27,4 +27,4 @@ jobs:
           echo "$merge_status"
 
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.TESTAPI }}

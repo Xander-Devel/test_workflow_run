@@ -1,0 +1,16 @@
+name: Test workflow_dispatch
+
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch
+
+jobs:
+  Test-workflow-dispatch:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "🎉 The job was automatically triggered by a ${{ github.event_name }} event."
+      - run: echo "🐧 This job is now running on a ${{ runner.os }} server hosted by GitHub!"
+      - name: Sleep for 2 minutes
+        run: sleep 2

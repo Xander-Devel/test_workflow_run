@@ -26,12 +26,14 @@ jobs:
           echo "✅ Cheshire: Renovate Updates synced with master" > message.txt
 
       - name: Send failure notification to Slack
+        if: success() || failure()
         run: |
 
           cat message.txt || echo "🔴 Merging master into renovate-updates failed" > message.txt
 
           echo 'Send message to slack'
           cat message.txt
+          echo ${{ steps.merge_master_step.conclusion }}
           
           if [ steps.merge_master_step.conclusion == 'failure' ]
           then

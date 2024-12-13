@@ -20,7 +20,7 @@ jobs:
         run: |
           echo "🎉 The job was automatically triggered by a ${{ github.event_name }} event."
           echo "Merge master into renovate-updates start"
-          echo "Merge master into renovate-updates FAILED TEST"
+          echo "Merge master into renovate-updates SUCCESS TEST"
           echo "✅ Renovate Updates synced with master" > message.txt
 
       - name: Send failure notification to Slack

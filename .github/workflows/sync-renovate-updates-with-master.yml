@@ -14,7 +14,6 @@ jobs:
       - name: Checkout code
         run: |
           echo "🎉 The job was automatically triggered by a ${{ github.event_name }} event."
-          exit 1
           echo "Checkout code success"
 
       - name: Merge master into renovate-updates

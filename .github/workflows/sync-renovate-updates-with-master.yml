@@ -14,6 +14,7 @@ jobs:
       - name: Checkout code
         run: |
           echo "🎉 The job was automatically triggered by a ${{ github.event_name }} event."
+          exit 1
           echo "Checkout code success"
 
       - name: Merge master into renovate-updates
@@ -21,7 +22,7 @@ jobs:
           echo "🎉 The job was automatically triggered by a ${{ github.event_name }} event."
           echo "Merge master into renovate-updates start"
           echo "Merge master into renovate-updates FAILED TEST"
-          exit 1
+          
           echo "✅ Cheshire: Renovate Updates synced with master" > message.txt
 
       - name: Send failure notification to Slack
@@ -33,4 +34,3 @@ jobs:
           echo 'Send message to slack'
           cat message.txt
           echo '#############################################'
-          echo ${{ steps.merge_master_step.conclusion }}

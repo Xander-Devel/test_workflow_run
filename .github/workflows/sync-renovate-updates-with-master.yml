@@ -21,12 +21,10 @@ jobs:
           echo "🎉 The job was automatically triggered by a ${{ github.event_name }} event."
           echo "Merge master into renovate-updates start"
           echo "Merge master into renovate-updates FAILED TEST"
-          exit 1
-          echo "✅ Cheshire: Renovate Updates synced with master" > message.txt
-
-        continue-on-error: true
+          echo "✅ Renovate Updates synced with master" > message.txt
 
       - name: Send failure notification to Slack
+        if: success() || failure()
         run: |
 
           cat message.txt || echo "🔴 Merging master into renovate-updates failed" > message.txt

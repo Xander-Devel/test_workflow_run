@@ -35,7 +35,7 @@ jobs:
           cat message.txt
           echo ${{ steps.merge_master_step.conclusion }}
           
-          if [ steps.merge_master_step.conclusion == 'failure' ]
+          if [[ steps.merge_master_step.conclusion == 'failure' ]]
           then
             echo "failed -d-d-d-d-d-d-"
           fi

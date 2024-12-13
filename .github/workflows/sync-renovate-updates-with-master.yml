@@ -17,7 +17,6 @@ jobs:
           echo "Checkout code success"
 
       - name: Merge master into renovate-updates
-        id: merge_master_step
         run: |
           echo "🎉 The job was automatically triggered by a ${{ github.event_name }} event."
           echo "Merge master into renovate-updates start"
@@ -33,11 +32,5 @@ jobs:
 
           echo 'Send message to slack'
           cat message.txt
+          echo '#############################################'
           echo ${{ steps.merge_master_step.conclusion }}
-          
-          if [ ${{ steps.merge_master_step.conclusion }} == 'failure' ]
-          then
-            echo "failed -d-d-d-d-d-d-"
-          fi
-          
-          

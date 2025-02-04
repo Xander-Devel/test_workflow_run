@@ -22,4 +22,6 @@ jobs:
           echo "🐧 This job is now running on a ${{ runner.os }} server hosted by GitHub!"
           
           # Sleep for 10 minutes
-          sleep 60s
+          sleep 20s
+          
+          #exit 1

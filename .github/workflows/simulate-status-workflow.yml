@@ -26,7 +26,7 @@ jobs:
              -f "state=pending" -f "target_url=https://example.com/build/status" -f "description=The build pending!" -f "context=simulate-status-workflow"
           
           echo 'Sleep a couple of minustes'
-          sleep 60s
+          sleep 300s
           
           echo 'Updating the STATUS tu sucess'
           gh api \

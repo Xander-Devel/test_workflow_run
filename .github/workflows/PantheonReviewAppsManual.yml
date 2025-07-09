@@ -35,9 +35,13 @@ jobs:
           BRANCH2: ${{ github.ref }}
           BRANCH: ${{ github.ref_name }}
 
+      - name: Set custom GITHUB_REF
+        id: set_custom_ref
+        run: echo "custom_ref=refs/pull/${{ steps.find_pr.outputs.pr_number }}/merge" >> $GITHUB_OUTPUT
+
       - uses: ./.github/actions/drainpipe/set-env
         env:
-          GITHUB_REF: refs/pull/${{ steps.find_pr.outputs.pr_number }}/merge
+          GITHUB_REF: ${{ steps.set_custom_ref.outputs.custom_ref }}
 
       - name: Deploy Pantheon Review App
         uses: ./.github/actions/drainpipe/pantheon/review

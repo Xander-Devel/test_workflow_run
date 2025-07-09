@@ -1,0 +1,40 @@
+name: "Pantheon Review Apps Manual"
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  Drainpipe-Deploy-Pantheon-Multidev:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/.ddev/.drainpipe-composer-cache
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-composer-
+
+      - name: Find open PR for branch
+        id: find_pr
+        run: |
+          PR_NUMBER=$(gh pr list --state open --head "$BRANCH" --json number --jq '.[0].number')
+          echo "pr_number=$PR_NUMBER" >> $GITHUB_OUTPUT
+
+          # TEST
+          echo "Branch $BRANCH"
+          echo "Branch2 $BRANCH2"
+          echo "PR number: $PR_NUMBER"
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BRANCH2: ${{ github.ref }}
+          BRANCH: ${{ github.ref_name }}
+
+      - uses: ./.github/actions/drainpipe/set-env
+        env:
+          GITHUB_REF: refs/pull/${{ steps.find_pr.outputs.pr_number }}/merge

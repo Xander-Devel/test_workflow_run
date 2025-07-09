@@ -37,7 +37,9 @@ jobs:
 
       - name: Set custom GITHUB_REF
         id: set_custom_ref
-        run: echo "custom_ref=refs/pull/${{ steps.find_pr.outputs.pr_number }}/merge" >> $GITHUB_OUTPUT
+        run: |
+          echo "custom_ref=refs/pull/${{ steps.find_pr.outputs.pr_number }}/merge" >> $GITHUB_OUTPUT
+          echo "GITHUB_REF=refs/pull/${{ steps.find_pr.outputs.pr_number }}/merge" >> $GITHUB_ENV
 
       - uses: ./.github/actions/drainpipe/set-env
         env:

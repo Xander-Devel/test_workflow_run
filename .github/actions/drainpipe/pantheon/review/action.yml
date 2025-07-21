@@ -25,9 +25,10 @@ inputs:
 runs:
   using: "composite"
   steps:
+    - uses: ./.github/actions/drainpipe/set-env
+
     - name: Trust all drush.in hosts
       run: |
-        echo "Heheheheheheheheheheheh: $DRAINPIPE_PR_NUMBER"
         source .github/actions/drainpipe/set-env/bash_aliases
         drainpipe_exec "echo -e \"Host *.drush.in\n    StrictHostKeyChecking no\n    HostkeyAlgorithms +ssh-rsa\n    PubkeyAcceptedKeyTypes +ssh-rsa\" >> ~/.ssh/config"
         drainpipe_exec "cat ~/.ssh/config"

@@ -20,28 +20,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-composer-
 
-      - name: Set env Custom
-        run: |
-          echo "Setting Drainpipe environment variables:"
-          DRAINPIPE_PR_NUMBER=$(gh pr list --state open --head "$BRANCH" --json number --jq '.[0].number')
-          echo "DRAINPIPE_PR_NUMBER=$DRAINPIPE_PR_NUMBER" >> $GITHUB_ENV
-          DRAINPIPE_SHA=$(gh pr view "$DRAINPIPE_PR_NUMBER" --json headRefOid --jq '.headRefOid')
-          echo "DRAINPIPE_SHA=$DRAINPIPE_SHA" >> $GITHUB_ENV
-
-          if [ -z "$DRAINPIPE_SHA" ] || [ "$DRAINPIPE_SHA" = "null" ]; then
-            DRAINPIPE_SHA=$DRAINPIPE_PR_NUMBER
-            echo "DRAINPIPE_SHA=$DRAINPIPE_PR_NUMBER" >> $GITHUB_ENV
-          fi
-
-          #test
-          echo "Testststststtstssssssssssssststststststst"
-          echo "DRAINPIPE_PR_NUMBER: $DRAINPIPE_PR_NUMBER"
-          echo "DRAINPIPE_SHA: $DRAINPIPE_SHA"
-          echo "GITHUB_EVENT_PATH: $GITHUB_EVENT_PATH"
-        env:
-          GH_TOKEN: ${{ github.token }}
-          BRANCH2: ${{ github.ref }}
-          BRANCH: ${{ github.ref_name }}
+      - uses: ./.github/actions/drainpipe/set-env
 
       - name: Deploy Pantheon Review App
         uses: ./.github/actions/drainpipe/pantheon/review

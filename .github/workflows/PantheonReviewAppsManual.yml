@@ -1,6 +1,8 @@
 name: "Pantheon Review Apps Manual"
 
 on:
+  pull_request:
+    types: [ opened, synchronize, reopened ]
   workflow_dispatch:
 
 concurrency:

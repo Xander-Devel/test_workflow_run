@@ -1,0 +1,31 @@
+name: PR merged to main
+
+on:
+  pull_request:
+    types: [closed]
+    branches:
+      - main
+
+jobs:
+  notify-slack:
+    name: Notify Slack on PR merge to main
+    if: github.event.pull_request.merged == true && github.event.pull_request.base.ref == 'main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Post message to Slack
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          MERGED_BY: ${{ github.event.pull_request.merged_by.login }}
+          REPO: ${{ github.repository }}
+        run: |
+          message=$(jq -n --arg repo "$REPO" \
+                     --arg title "$PR_TITLE" \
+                     --arg url "$PR_URL" \
+                     --arg number "$PR_NUMBER" \
+                     --arg merged_by "$MERGED_BY" \
+                     '{ text: ("[" + $repo + "] PR merged to main: <" + $url + "|" + $title + " (#" + $number + ")> by " + $merged_by) }')
+          
+          echo "$message"

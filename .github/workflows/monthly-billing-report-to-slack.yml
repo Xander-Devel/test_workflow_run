@@ -1,4 +1,4 @@
-name:   monthly Billing Report to Slack
+name: Monthly Billing Report to Slack
 
 on:
   schedule:
@@ -16,21 +16,46 @@ jobs:
       - name: Fetch and Format Billing Data
         id: fetch_data
         env:
-          GH_TOKEN: ${{ secrets.BILLING_PAT }}
+          GH_TOKEN: ${{ secrets.BILLING_PAT }}  # classic PAT
         run: |
           set -euo pipefail
-          RESPONSE=$(curl -sS -L \
-            -H "Accept: application/vnd.github+json" \
-            -H "Authorization: Bearer $GH_TOKEN" \
-            "https://api.github.com/orgs/$ORG_NAME/settings/billing/actions")
 
-          # Debug: print raw response
+          echo "Resolving org and enterprise…"
+          ORG_JSON=$(gh api "orgs/$ORG_NAME" || true)
+          ORG_TYPE=$(echo "$ORG_JSON" | jq -r '.type // empty')
+          ENT_SLUG=$(echo "$ORG_JSON" | jq -r '.enterprise.slug // empty')
+
+          if [ "$ORG_TYPE" != "Organization" ]; then
+            echo "ORG_NAME is not an Organization. Found: $ORG_TYPE"
+            exit 1
+          fi
+
+          if [ -n "$ENT_SLUG" ] && [ "$ENT_SLUG" != "null" ]; then
+            echo "Org is enterprise-managed: $ENT_SLUG. Using enterprise billing endpoint."
+            RESPONSE=$(curl -sS -L \
+              -H "Accept: application/vnd.github+json" \
+              -H "Authorization: Bearer $GH_TOKEN" \
+              "https://api.github.com/enterprises/$ENT_SLUG/settings/billing/actions")
+          else
+            echo "Org is standalone. Using org billing endpoint."
+            RESPONSE=$(curl -sS -L \
+              -H "Accept: application/vnd.github+json" \
+              -H "Authorization: Bearer $GH_TOKEN" \
+              "https://api.github.com/orgs/$ORG_NAME/settings/billing/actions")
+          fi
+
           echo "---- Billing API RESPONSE ----"
           echo "$RESPONSE" | jq -r . || echo "$RESPONSE"
 
-          # Fail fast on bad credentials
-          if echo "$RESPONSE" | jq -e '.message=="Bad credentials"' >/dev/null; then
-            echo "Bad credentials: ensure BILLING_PAT is a classic PAT with read:org, owned by an org owner, and SSO-authorized if needed."
+          MSG=$(echo "$RESPONSE" | jq -r '.message // empty')
+          STATUS=$(echo "$RESPONSE" | jq -r '.status // empty')
+
+          if [ "$MSG" = "Bad credentials" ]; then
+            echo "Bad credentials: use a CLASSIC PAT. For org: read:org. For enterprise: read:enterprise. SSO-authorize the PAT if required."
+            exit 1
+          fi
+          if [ "$MSG" = "Not Found" ] || [ "$STATUS" = "404" ]; then
+            echo "Not Found: If the org is enterprise-managed, you must query the enterprise endpoint with an enterprise owner PAT (read:enterprise)."
             exit 1
           fi
 
@@ -44,7 +69,6 @@ jobs:
           WINDOWS_RATE=0.016
           MACOS_RATE=0.10
 
-          # Compute estimated cost, subtract an approximate "included credit" using Ubuntu rate
           CURRENT_COST=$(jq -n \
             --argjson ub "$UBUNTU_MIN" \
             --argjson win "$WINDOWS_MIN" \
@@ -58,8 +82,6 @@ jobs:
               + $mac * ($macRate|tonumber) )
               - ( $inc * ($ubRate|tonumber) )
             ')
-
-          # Clamp to non-negative and round to whole dollars
           CURRENT_COST_FLOOR=$(echo "$CURRENT_COST" | awk '{ if ($1<0) $1=0; printf("%.0f",$1) }')
           MONTH_LABEL=$(date +%b)
 
@@ -78,7 +100,6 @@ jobs:
           SLACK_MESSAGE="${MESSAGE//$'\n'/'\n'}"
           echo "SLACK_MESSAGE=$SLACK_MESSAGE" >> "$GITHUB_OUTPUT"
 
-      # Test-only: print payload instead of sending to Slack
       - name: Print Slack Payload (Test)
         run: |
           echo "---- Slack Payload (Test) ----"

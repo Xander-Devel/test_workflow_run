@@ -1,4 +1,4 @@
-name: Daily Billing Report to Slack
+name:   monthly Billing Report to Slack
 
 on:
   schedule:
@@ -24,24 +24,42 @@ jobs:
             -H "Authorization: Bearer $GH_TOKEN" \
             "https://api.github.com/orgs/$ORG_NAME/settings/billing/actions")
 
-          TOTAL_MINUTES=$(echo "$RESPONSE" | jq -r '.total_minutes_used_including_private_repos // .total_minutes_used')
-          INCLUDED_MINUTES=$(echo "$RESPONSE" | jq -r '.included_minutes')
-          UBUNTU_MIN=$(echo "$RESPONSE" | jq -r '.minutes_used_breakdown.UBUNTU // 0')
-          WINDOWS_MIN=$(echo "$RESPONSE" | jq -r '.minutes_used_breakdown.WINDOWS // 0')
-          MACOS_MIN=$(echo "$RESPONSE" | jq -r '.minutes_used_breakdown.MACOS // 0')
+          # Debug: print raw response
+          echo "---- Billing API RESPONSE ----"
+          echo "$RESPONSE" | jq -r . || echo "$RESPONSE"
+
+          # Fail fast on bad credentials
+          if echo "$RESPONSE" | jq -e '.message=="Bad credentials"' >/dev/null; then
+            echo "Bad credentials: ensure BILLING_PAT is a classic PAT with read:org, owned by an org owner, and SSO-authorized if needed."
+            exit 1
+          fi
+
+          TOTAL_MINUTES=$(echo "$RESPONSE" | jq -r '(.total_minutes_used_including_private_repos // .total_minutes_used // 0) | tonumber')
+          INCLUDED_MINUTES=$(echo "$RESPONSE" | jq -r '(.included_minutes // 0) | tonumber')
+          UBUNTU_MIN=$(echo "$RESPONSE" | jq -r '(.minutes_used_breakdown.UBUNTU // 0) | tonumber')
+          WINDOWS_MIN=$(echo "$RESPONSE" | jq -r '(.minutes_used_breakdown.WINDOWS // 0) | tonumber')
+          MACOS_MIN=$(echo "$RESPONSE" | jq -r '(.minutes_used_breakdown.MACOS // 0) | tonumber')
 
           UBUNTU_RATE=0.008
           WINDOWS_RATE=0.016
           MACOS_RATE=0.10
 
-          CURRENT_COST=$(jq -n --arg ub "$UBUNTU_MIN" --arg win "$WINDOWS_MIN" --arg mac "$MACOS_MIN" \
-            --arg ubRate "$UBUNTU_RATE" --arg winRate "$WINDOWS_RATE" --arg macRate "$MACOS_RATE" \
-            --arg inc "$INCLUDED_MINUTES" '
-              ( ($ub|tonumber) * ($ubRate|tonumber)
-              + ($win|tonumber) * ($winRate|tonumber)
-              + ($mac|tonumber) * ($macRate|tonumber) )
-              - ( ($inc|tonumber) * ($ubRate|tonumber) )
+          # Compute estimated cost, subtract an approximate "included credit" using Ubuntu rate
+          CURRENT_COST=$(jq -n \
+            --argjson ub "$UBUNTU_MIN" \
+            --argjson win "$WINDOWS_MIN" \
+            --argjson mac "$MACOS_MIN" \
+            --argjson inc "$INCLUDED_MINUTES" \
+            --arg ubRate "$UBUNTU_RATE" \
+            --arg winRate "$WINDOWS_RATE" \
+            --arg macRate "$MACOS_RATE" '
+              ( $ub * ($ubRate|tonumber)
+              + $win * ($winRate|tonumber)
+              + $mac * ($macRate|tonumber) )
+              - ( $inc * ($ubRate|tonumber) )
             ')
+
+          # Clamp to non-negative and round to whole dollars
           CURRENT_COST_FLOOR=$(echo "$CURRENT_COST" | awk '{ if ($1<0) $1=0; printf("%.0f",$1) }')
           MONTH_LABEL=$(date +%b)
 
@@ -64,24 +82,4 @@ jobs:
       - name: Print Slack Payload (Test)
         run: |
           echo "---- Slack Payload (Test) ----"
-          cat <<'JSON'
-          {
-            "text": "'"${{ steps.fetch_data.outputs.SLACK_MESSAGE }}}"'",
-            "attachments": [
-              {
-                "color": "#0099ff",
-                "blocks": [
-                  {
-                    "type": "context",
-                    "elements": [
-                      {
-                        "type": "mrkdwn",
-                        "text": "*Triggered by:* ${{ github.event_name == 'workflow_dispatch' && github.actor || 'Schedule' }} on ${{ github.ref_name }}"
-                      }
-                    ]
-                  }
-                ]
-              }
-            ]
-          }
-          JSON
+          echo "{\"text\": \"${{ steps.fetch_data.outputs.SLACK_MESSAGE }}\"}"

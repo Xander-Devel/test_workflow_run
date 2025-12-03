@@ -1,0 +1,87 @@
+name: Daily Billing Report to Slack
+
+on:
+  schedule:
+    - cron: '0 9 1 * *'
+  workflow_dispatch:
+
+jobs:
+  report_billing:
+    runs-on: ubuntu-latest
+
+    env:
+      ORG_NAME: Xander-Devel
+
+    steps:
+      - name: Fetch and Format Billing Data
+        id: fetch_data
+        env:
+          GH_TOKEN: ${{ secrets.BILLING_PAT }}
+        run: |
+          set -euo pipefail
+          RESPONSE=$(curl -sS -L \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            "https://api.github.com/orgs/$ORG_NAME/settings/billing/actions")
+
+          TOTAL_MINUTES=$(echo "$RESPONSE" | jq -r '.total_minutes_used_including_private_repos // .total_minutes_used')
+          INCLUDED_MINUTES=$(echo "$RESPONSE" | jq -r '.included_minutes')
+          UBUNTU_MIN=$(echo "$RESPONSE" | jq -r '.minutes_used_breakdown.UBUNTU // 0')
+          WINDOWS_MIN=$(echo "$RESPONSE" | jq -r '.minutes_used_breakdown.WINDOWS // 0')
+          MACOS_MIN=$(echo "$RESPONSE" | jq -r '.minutes_used_breakdown.MACOS // 0')
+
+          UBUNTU_RATE=0.008
+          WINDOWS_RATE=0.016
+          MACOS_RATE=0.10
+
+          CURRENT_COST=$(jq -n --arg ub "$UBUNTU_MIN" --arg win "$WINDOWS_MIN" --arg mac "$MACOS_MIN" \
+            --arg ubRate "$UBUNTU_RATE" --arg winRate "$WINDOWS_RATE" --arg macRate "$MACOS_RATE" \
+            --arg inc "$INCLUDED_MINUTES" '
+              ( ($ub|tonumber) * ($ubRate|tonumber)
+              + ($win|tonumber) * ($winRate|tonumber)
+              + ($mac|tonumber) * ($macRate|tonumber) )
+              - ( ($inc|tonumber) * ($ubRate|tonumber) )
+            ')
+          CURRENT_COST_FLOOR=$(echo "$CURRENT_COST" | awk '{ if ($1<0) $1=0; printf("%.0f",$1) }')
+          MONTH_LABEL=$(date +%b)
+
+          MESSAGE=$(jq -nr --arg m "$MONTH_LABEL" \
+            --arg total "$TOTAL_MINUTES" \
+            --arg included "$INCLUDED_MINUTES" \
+            --arg ubuntu "$UBUNTU_MIN" \
+            --arg windows "$WINDOWS_MIN" \
+            --arg macos "$MACOS_MIN" \
+            --arg cost "$CURRENT_COST_FLOOR" '
+            "GitHub Actions Usage Report (Xander-Devel):
+            - Current Month (\($m)): $\($cost)ish
+            - Total Minutes: \($total) (Included: \($included))
+            - Breakdown — Ubuntu: \($ubuntu) min, Windows: \($windows) min, macOS: \($macos) min"
+          ')
+          SLACK_MESSAGE="${MESSAGE//$'\n'/'\n'}"
+          echo "SLACK_MESSAGE=$SLACK_MESSAGE" >> "$GITHUB_OUTPUT"
+
+      # Test-only: print payload instead of sending to Slack
+      - name: Print Slack Payload (Test)
+        run: |
+          echo "---- Slack Payload (Test) ----"
+          cat <<'JSON'
+          {
+            "text": "'"${{ steps.fetch_data.outputs.SLACK_MESSAGE }}}"'",
+            "attachments": [
+              {
+                "color": "#0099ff",
+                "blocks": [
+                  {
+                    "type": "context",
+                    "elements": [
+                      {
+                        "type": "mrkdwn",
+                        "text": "*Triggered by:* ${{ github.event_name == 'workflow_dispatch' && github.actor || 'Schedule' }} on ${{ github.ref_name }}"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+          JSON
